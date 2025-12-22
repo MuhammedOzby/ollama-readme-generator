@@ -33,7 +33,7 @@ func main() {
 	}
 	log.Println("Model: " + *modelPtr)
 	log.Println("Promp file location:" + *promptFilePtr)
-	log.Println("Prompt okundu! Dosya içeriği alınıyor. PATH: " + *promptFilePtr)
+	log.Println("Prompt okundu! Dosya içeriği alınıyor.")
 	filesData := lib.ReadData()
 	log.Println("Dosyalar okundu! ollama sorgusu alınıyor.")
 	log.Println("Örnek kullanım: go run main.go -model=gpt-oss > README.md")
