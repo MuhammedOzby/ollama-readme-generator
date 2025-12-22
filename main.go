@@ -18,19 +18,21 @@ func readPromptFile(filename string) (string, error) {
 }
 
 func main() {
-	exePath, err := os.Executable()
+	appDir, err := os.Executable()
 	if err != nil {
 		fmt.Println("Executable yolu alınamadı:", err)
 		return
 	}
 	modelPtr := flag.String("model", "gpt-oss", "Kullanılacak Ollama modeli")
-	promptFilePtr := flag.String("prompt-file", filepath.Dir(exePath)+"/Prompt.md", "Code öncesi girilecek olan propmt metinin dosya konumu.")
+	promptFilePtr := flag.String("promptfile", filepath.Join(appDir, "Prompt.md"), "Code öncesi girilecek olan propmt metinin dosya konumu.")
 	flag.Parse()
 	prompt, err := readPromptFile(*promptFilePtr)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
+	log.Println("Model: " + *modelPtr)
+	log.Println("Promp file location:" + *promptFilePtr)
 	log.Println("Prompt okundu! Dosya içeriği alınıyor. PATH: " + *promptFilePtr)
 	filesData := lib.ReadData()
 	log.Println("Dosyalar okundu! ollama sorgusu alınıyor.")
