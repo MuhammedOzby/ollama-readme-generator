@@ -24,7 +24,7 @@ func main() {
 		return
 	}
 	modelPtr := flag.String("model", "gpt-oss", "Kullanılacak Ollama modeli")
-	promptFilePtr := flag.String("promptfile", filepath.Join(appDir, "Prompt.md"), "Code öncesi girilecek olan propmt metinin dosya konumu.")
+	promptFilePtr := flag.String("promptfile", filepath.Join(filepath.Dir(appDir), "Prompt.md"), "Code öncesi girilecek olan propmt metinin dosya konumu.")
 	flag.Parse()
 	prompt, err := readPromptFile(*promptFilePtr)
 	if err != nil {
