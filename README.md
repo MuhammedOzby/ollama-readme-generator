@@ -51,7 +51,8 @@ graph TD
     B --> D{File Reader};
     D -- File Content --> E[Combined Source Code];
     F[Prompt File] --> G[Prompt Content];
-    G + E --> H[Final Prompt];
+    G --> H[Final Prompt];
+    E --> H[Final Prompt];
     H --> I[Ollama API];
     I --> J[Generated README.md];
     J --> K[Standard Output];
