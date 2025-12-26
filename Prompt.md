@@ -26,10 +26,11 @@ Place this exact text at the bottom of the documentation:
 
 ### 4. Document/explanation sections
 Document has the following sections:
-1. Summary: That sections has compact and giving an idea for readers dummies.
+1. About: That sections has compact and giving an idea for readers dummies.
 2. Enterance: Can write an about and answer of question for "Why write that code? Where are we use that project?"
-3. Body: That section are long side. Because explanation all code and everything for the code. Explanation has use of code and requirements project.
-4. Conculision: There are the last section of document. Has the answer of "What we are use that?" question.
+3. Explain: That section are long side. Because explanation all code and everything for the code. Explanation has use of code and requirements project.
+4. Usage Examples: Write how to use it. Write usage example and explain for readers dummies. You can find in the codes.
+5. Conculision: There are the last section of document. Has the answer of "What we are use that?" question.
 
 
 ----------------- Project Codes start HERE -----------------

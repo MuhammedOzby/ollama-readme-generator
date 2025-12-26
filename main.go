@@ -38,6 +38,7 @@ func main() {
 	log.Println("Dosyalar okundu! ollama sorgusu alınıyor.")
 	log.Println("Örnek kullanım: go run main.go -model=gpt-oss > README.md")
 	log.Println("-----------------------------------------")
+	log.Println(fmt.Sprintf("%s\n%s", prompt, filesData))
 	lib.AskOllama(*modelPtr, fmt.Sprintf("%s\n%s", prompt, filesData))
 	os.Exit(0)
 }

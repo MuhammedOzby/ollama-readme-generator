@@ -1,108 +1,139 @@
+# Ollama README Generator - Documentation
+
+## 1. About
+
+This tool automatically generates a `README.md` file from your project's source code. It reads all the files in your project (excluding those specified in `.gitignore`), combines their content, and sends this combined content as a prompt to an Ollama model (like `gpt-oss`). The model then generates the final `README.md` content, which is printed to standard output. This documentation is created for dummies, ensuring a simple understanding of the project's functionality.
+
+## 2. Entrance
+
+**Why was this code written?**
+
+This project was created to streamline the process of generating `README.md` files for software projects.  Manually writing a good `README` can be time-consuming. This tool automates the process by extracting source code and using an AI model to create a descriptive `README` file.
+
+**Where can this project be used?**
+
+This project is useful for:
+
+*   **Open-source projects:** Quickly generate a `README` to help others understand your code.
+*   **Personal projects:** Document your code easily.
+*   **Rapid prototyping:** Generate documentation as part of your development workflow.
+
+## 3. Explain
+
+### Core Functionality
+
+The `ollama-readme-generator` project consists of several key components, each with a specific role in generating the `README.md` file. Let's break down how it all works:
+
+1.  **File Reading & `.gitignore` Handling (`lib/file-process.go`)**: This module is responsible for walking through the project directory, reading the content of each file, and respecting the rules specified in the `.gitignore` file.
+    *   `parseGitIgnore()`:  Reads the `.gitignore` file and returns a list of file patterns to exclude from processing.
+    *   `isIgnored()`: Checks if a given file or directory matches any of the ignore patterns.
+    *   `ReadData()`:  The main function that walks the directory, skips ignored files/directories, reads file content, and combines it into a single string.
+
+2.  **Ollama Interaction (`lib/ollama-sender.go`)**: This module handles communication with the Ollama API.
+    *   `AskOllama()`: Sends a request to the Ollama API with a specified model and prompt.  It receives the response as a stream of text and prints it to the console.
+
+3.  **Main Application (`main.go`)**: This is the entry point of the application. It orchestrates the entire process.
+    *   It parses command-line arguments (model name and prompt file).
+    *   It reads the prompt from the specified file.
+    *   It calls `lib.ReadData()` to get the combined source code content.
+    *   It constructs the final prompt by combining the prompt file content and the source code content.
+    *   It calls `lib.AskOllama()` to send the prompt to Ollama and print the generated `README.md` content.
+
+### Data Flow
+
+Here's a diagram illustrating the data flow within the application:
+
 ```mermaid
-flowchart TD
-  A[User runs `go run main.go -model=… -promptfile=…`]
-  B[main.go parses flags]
-  C[Read prompt file → prompt]
-  D["ReadData()"]
-  E[Parse .gitignore]
-  F[WalkDir root, filter files]
-  G[Collect file data string]
-  H["AskOllama(model, prompt+filesData)"]
-  I["HTTP POST to Ollama (localhost:11434)"]
-  J[Stream decode OllamaResponse]
-  K[Print response parts]
-  L[Exit]
-
-  A --> B
-  B --> C
-  C --> D
-  D --> E
-  E --> F
-  F --> G
-  G --> H
-  H --> I
-  I --> J
-  J --> K
-  K --> L
+graph TD
+    A[Project Directory] --> B{File System Walker};
+    B --> C{`.gitignore` Parser};
+    C -- Ignore Rules --> B;
+    B --> D{File Reader};
+    D -- File Content --> E[Combined Source Code];
+    F[Prompt File] --> G[Prompt Content];
+    G + E --> H[Final Prompt];
+    H --> I[Ollama API];
+    I --> J[Generated README.md];
+    J --> K[Standard Output];
 ```
 
-## 🇬🇧 English Documentation (Technical Deep Dive)
+### Code Snippets and Explanation
 
-### Project Title & Synopsis  
-**Ollama Readme Generator** – A lightweight Go tool that automatically constructs a `README.md` by scanning all non‑ignored files in the current directory, appending a user‑supplied prompt, and streaming the response from a locally running Ollama language model.
+*   **Reading Files & Ignoring `.gitignore`:**
 
-### How It Works (The Mechanics)
+    ```go
+    // lib/file-process.go
+    func ReadData() string {
+        // ... (code to parse .gitignore and walk the directory) ...
+        if !d.IsDir() {
+            content, _ := os.ReadFile(path)
+            filesDatas += fmt.Sprintf("FileName: %s\n", relPath)
+            filesDatas += fmt.Sprintf("Data:\n%s\n\n", string(content))
+        }
+        return filesDatas
+    }
+    ```
 
-| Component | File | Key Functions / Types | Purpose |
-|-----------|------|-----------------------|---------|
-| **Main Orchestrator** | `main.go` | `readPromptFile`, `main` | Parses command‑line flags (`-model`, `-promptfile`), reads the prompt template, collects file data via `lib.ReadData()`, and forwards the combined payload to `lib.AskOllama`. |
-| **File Collection & Git‑Ignore Handling** | `lib/file-process.go` | `parseGitIgnore`, `isIgnored`, `ReadData` | *`parseGitIgnore`* reads the repository’s `.gitignore` (or creates a default rule set containing `.git`). <br>*`isIgnored`* performs simple glob matching to decide if a path should be excluded. <br>*`ReadData`* walks the current working directory, respects ignored paths, reads each file’s contents, and concatenates them into a single string prefixed with `FileName:` and `Data:` markers. |
-| **Ollama Request/Response** | `lib/ollama-sender.go` | `AskOllama`, `OllamaRequest`, `OllamaResponse` | Builds a JSON payload (`model`, `prompt`, `stream:true`), POSTs it to `http://localhost:11434/api/generate`, and decodes the streaming JSON chunks. Each `OllamaResponse` chunk’s `Response` field is printed immediately. The function exits once the `Done` flag is true. |
+    This function walks through the project directory, skips ignored files/directories (based on `.gitignore`), and reads the content of each file, appending it to the `filesDatas` string.
 
-The tool relies on standard Go libraries (`flag`, `fmt`, `log`, `os`, `path/filepath`, `bufio`, `encoding/json`, `io`, `net/http`, `io/fs`) and no external dependencies.
+*   **Sending Prompt to Ollama:**
 
-### Prerequisites
+    ```go
+    // lib/ollama-sender.go
+    func AskOllama(modelName string, prompt string) error {
+        // ... (code to create HTTP request and send to Ollama API) ...
+        decoder := json.NewDecoder(resp.Body)
+        for {
+            var part OllamaResponse
+            if err := decoder.Decode(&part); err == io.EOF {
+                break
+            } else if err != nil {
+                return err
+            }
+            fmt.Print(part.Response)
+            if part.Done {
+                break
+            }
+        }
+        return nil
+    }
+    ```
 
-- Go **1.23.0** or newer (specified in `go.mod`).
-- A running Ollama server exposing the **/api/generate** endpoint at `http://localhost:11434` (the tool assumes the model is available locally).
-- Optional: A `.gitignore` file to exclude unwanted paths.
-- `Prompt.md` – a markdown file containing the prompt template; defaults to the file bundled with the executable.
+    This function sends the constructed prompt to the Ollama API, streams the response, and prints it to the console.
 
-### Usage / Execution
+## 4. Usage Examples
 
-```bash
-# Basic usage, redirecting output to README.md
-go run main.go -model=gpt-oss > README.md
+1.  **Basic Usage:**
 
-# Custom model or prompt file
-go run main.go -model=my-model -promptfile=/path/to/custom/Prompt.md > README.md
-```
+    ```bash
+    go run main.go > README.md
+    ```
 
-The `-model` flag selects the Ollama model name. The `-promptfile` flag points to the prompt template; if omitted, the bundled `Prompt.md` is used. The program logs its progress and prints the generated README to stdout.
+    This command will generate a `README.md` file using the default model (`gpt-oss`) and the default prompt file (`Prompt.md`).
 
----
+2.  **Specify Model:**
 
-## 🇹🇷 Turkish Documentation (Tam Teknik Çeviri)
+    ```bash
+    go run main.go -model=llama2 > README.md
+    ```
 
-### Proje Başlığı & Özeti  
-**Ollama Readme Generator** – Yerel olarak çalışan Ollama dil modeline kod dosyalarını, kullanıcı tarafından sağlanan bir promptu birleştirerek otomatik olarak `README.md` oluşturan hafif bir Go aracıdır.
+    This command will use the `llama2` model to generate the `README.md` file.
 
-### Çalışma Mantığı (Mekanik)
+3.  **Specify Prompt File:**
 
-| Bileşen | Dosya | Ana Fonksiyon / Türler | Amaç |
-|---------|-------|------------------------|------|
-| **Ana Koordinatör** | `main.go` | `readPromptFile`, `main` | Komut satırı bayraklarını (`-model`, `-promptfile`) ayrıştırır, prompt şablonunu okur, `lib.ReadData()` ile dosya verilerini toplar ve birleşik yükü `lib.AskOllama`'ya iletir. |
-| **Dosya Toplama & Git‑Ignore İşleme** | `lib/file-process.go` | `parseGitIgnore`, `isIgnored`, `ReadData` | *`parseGitIgnore`* repository’nin `.gitignore` dosyasını okur (ya da varsayılan `.git` kural seti oluşturur). <br>*`isIgnored`* basit glob eşlemesiyle yolun dışlanıp dışlanmayacağını belirler. <br>*`ReadData`* geçerli çalışma dizinini dolaşır, dışlanan yolları atar, her dosyanın içeriğini okur ve `FileName:` ve `Data:` işaretleriyle tek bir string içinde birleştirir. |
-| **Ollama İstek/Çıkış** | `lib/ollama-sender.go` | `AskOllama`, `OllamaRequest`, `OllamaResponse` | JSON yükü oluşturur (`model`, `prompt`, `stream:true`), `http://localhost:11434/api/generate` adresine POST yapar ve akışlı JSON parçalarını çözer. Her `OllamaResponse` parçasının `Response` alanı hemen ekrana yazdırılır. `Done` bayrağı true olduğunda çıkış yapılır. |
+    ```bash
+    go run main.go -promptfile=my_prompt.txt > README.md
+    ```
 
-Araç, standart Go kütüphanelerini (`flag`, `fmt`, `log`, `os`, `path/filepath`, `bufio`, `encoding/json`, `io`, `net/http`, `io/fs`) kullanır ve ek bağımlılık yoktur.
+    This command will use the `my_prompt.txt` file as the prompt for generating the `README.md` file.
 
-### Gereksinimler
+## 5. Conclusion
 
-- Go **1.23.0** veya üstü ( `go.mod` içinde belirtilmiştir).  
-- `http://localhost:11434` adresinde **/api/generate** endpoint'ini açan çalışan bir Ollama sunucusu (aracın yerel modelin mevcut olduğunu varsayar).  
-- Opsiyonel: İstenmeyen yolları dışlamak için `.gitignore` dosyası.  
-- `Prompt.md` – prompt şablonunu içeren markdown dosyası; paketle birlikte gelen dosya varsayılan olarak kullanılır.
+The `ollama-readme-generator` simplifies the process of creating `README.md` files. By automatically extracting source code and using the power of AI models like Ollama, it saves developers time and effort.  This tool is useful for both open-source and personal projects, helping to create clear and informative documentation. This project is used for make documentation process easy and fast.
 
-### Kullanım / Çalıştırma
+That explanation created from AI.
 
-```bash
-# Temel kullanım, çıktıyı README.md dosyasına yönlendirme
-go run main.go -model=gpt-oss > README.md
+**AI Context & Memory**
 
-# Özel model veya prompt dosyası
-go run main.go -model=my-model -promptfile=/path/to/custom/Prompt.md > README.md
-```
+This project automates `README.md` generation. It walks a directory, respecting `.gitignore`, reads file contents, and sends a combined prompt to an Ollama model via HTTP POST request. The model's streamed response is then printed to stdout, effectively creating the `README`.  Key variables include `modelName` (Ollama model), `promptFile` (path to introductory prompt), and `filesData` (combined source code). The core functions are `ReadData` (file system traversal and content extraction) and `AskOllama` (API interaction and response streaming). Command-line arguments control the model and prompt file.
 
-`-model` bayrağı Ollama model adını seçer. `-promptfile` bayrağı prompt şablonunun yolunu belirtir; verilmezse paketlenmiş `Prompt.md` kullanılır. Program ilerlemesini loglar ve üretilen README'yi stdout'a yazdırır.
-
----
-
-> Bu dosya AI üzerinden otomatik hazırlanmıştır.
-
----
-
-## AI Context & Memory
-
-**Summary:**  
-The Go program `ollama-readme-generator` orchestrates generation of a README by reading all non‑ignored files in the current working directory, combining their content with a user prompt, and streaming the result from a local Ollama model (via `http://localhost:11434/api/generate`). Key modules: `main.go` (flag parsing, prompt reading, orchestration), `lib/file-process.go` (gitignore parsing, directory walk, file reading), `lib/ollama-sender.go` (HTTP POST, JSON streaming). Uses only standard libraries; requires Go ≥1.23 and a running Ollama server. The README output is printed to stdout, intended to be redirected to a file.
