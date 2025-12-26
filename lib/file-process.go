@@ -76,7 +76,7 @@ func ReadData() string {
 			log.Printf("Okunuyor: %s\n", relPath)
 			// content, _ := os.ReadFile(path) ...
 			content, _ := os.ReadFile(path)
-			filesDatas += fmt.Sprintf("FileName: %s\n", path)
+			filesDatas += fmt.Sprintf("FileName: %s\n", relPath)
 			filesDatas += fmt.Sprintf("Data:\n%s\n\n", string(content))
 		}
 
